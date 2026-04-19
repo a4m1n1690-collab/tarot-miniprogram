@@ -1,0 +1,515 @@
+/* index.wxss */
+
+/* ══════════════════════════════════════════════════════
+   1. 基础 & 页面布局
+   重点：bottom-bar 用 position:fixed + bottom:0，
+   绝不依赖 flex/页面高度，确保输入框永远贴屏幕底部。
+══════════════════════════════════════════════════════ */
+
+page {
+  background: #080818;
+  color: #e8e8f0;
+  font-family: -apple-system, 'PingFang SC', sans-serif;
+  height: 100%;
+}
+
+.page-wrap {
+  position: relative;
+  height: 100vh;
+  overflow: hidden;
+}
+
+/* 滚动聊天区：占满全屏，底部留出输入框高度 */
+.chat-scroll {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  padding: 20rpx 20rpx 0;
+  box-sizing: border-box;
+  overflow-y: auto;
+}
+
+/* ══════════════════════════════════════════════════════
+   2. 对话气泡
+══════════════════════════════════════════════════════ */
+
+.msg {
+  display: flex;
+  align-items: flex-start;
+  margin: 24rpx 0;
+  animation: fadeUp .3s ease;
+}
+
+.msg-user {
+  flex-direction: row-reverse;
+}
+
+.avatar {
+  width: 72rpx;
+  font-size: 42rpx;
+  text-align: center;
+  flex-shrink: 0;
+  margin-top: 4rpx;
+}
+
+.bubble {
+  max-width: 72%;
+  background: #1a1a36;
+  padding: 24rpx 28rpx;
+  border-radius: 20rpx;
+  margin: 0 16rpx;
+  font-size: 28rpx;
+  line-height: 1.7;
+  word-break: break-word;
+  white-space: pre-wrap;
+}
+
+.msg-user .bubble {
+  background: #c1365a;
+  color: #fff;
+}
+
+/* ══════════════════════════════════════════════════════
+   3. 选牌阵
+══════════════════════════════════════════════════════ */
+
+.spread-picker-wrap {
+  padding: 20rpx 0 30rpx;
+}
+
+.spread-picker {
+  display: flex;
+  flex-direction: column;
+  gap: 20rpx;
+  align-items: center;
+}
+
+.picker-item {
+  width: 88%;
+  background: #1c1c3a;
+  border: 1.5rpx solid #4a2e6e;
+  border-radius: 22rpx;
+  padding: 30rpx 32rpx;
+  transition: all .2s;
+}
+
+.picker-item-hover {
+  background: #2a1e4a;
+  border-color: #e94560;
+  transform: scale(0.98);
+}
+
+.p-name {
+  font-size: 34rpx;
+  font-weight: bold;
+  color: #e8d5f5;
+  margin-bottom: 8rpx;
+}
+
+.p-tag {
+  font-size: 24rpx;
+  color: #e94560;
+  margin-bottom: 12rpx;
+}
+
+.p-desc {
+  font-size: 24rpx;
+  color: #888;
+  line-height: 1.6;
+}
+
+/* ══════════════════════════════════════════════════════
+   4. 牌阵互动区外层
+══════════════════════════════════════════════════════ */
+
+.interact-wrap {
+  background: rgba(20, 15, 40, 0.85);
+  border: 1rpx solid #2e1e50;
+  border-radius: 28rpx;
+  padding: 30rpx 10rpx 40rpx;
+  margin: 10rpx 0 20rpx;
+}
+
+.spread-title {
+  text-align: center;
+  font-size: 30rpx;
+  color: #c9a0dc;
+  letter-spacing: 4rpx;
+  margin-bottom: 10rpx;
+}
+
+.draw-counter {
+  text-align: center;
+  font-size: 24rpx;
+  color: #e94560;
+  margin-bottom: 16rpx;
+}
+
+/* ══════════════════════════════════════════════════════
+   5. 槽位容器 & 卡片3D翻转
+   关键修复：
+   - slot-item 用 position:absolute + transform:translateX(-50%) 居中
+   - card-wrap 固定宽高，preserve-3d
+   - 翻牌后 card-name-label 通过 margin-top 定位，不影响牌位
+   - 使用 min-height 而非固定高度，确保文字不被裁切
+══════════════════════════════════════════════════════ */
+
+.slots-container {
+  position: relative;
+  width: 100%;
+}
+
+.slot-item {
+  position: absolute;
+  width: 160rpx;
+  transform: translateX(-50%);
+  /* position:relative 让内部绝对定位的标签以此为参考点 */
+  /* 注意：position:absolute 已经建立了定位上下文，子元素绝对定位会参考此元素 */
+}
+
+/* card-wrap 在 slot-item 内水平居中：(slot宽160 - card宽110) / 2 = 25 */
+.slot-item .card-wrap {
+  margin-left: 25rpx;
+}
+
+/* 卡片容器 */
+.card-wrap {
+  width: 110rpx;
+  height: 180rpx;
+  position: relative;
+}
+
+/* 正面/背面共用 */
+.card-face {
+  width: 110rpx;
+  height: 180rpx;
+  border-radius: 10rpx;
+  overflow: hidden;
+}
+
+/* 背面 */
+.card-back-face {
+  background: #120e2a;
+  border: 1.5rpx solid #4a2e6e;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* 正面 */
+.card-front-face {
+  border: 2rpx solid #e94560;
+  background: #1a0a1e;
+}
+
+/* 逆位：图片旋转180度 */
+.card-front-face.is-reverse .card-img {
+  transform: rotate(180deg);
+}
+
+.card-img {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+/* 空槽虚线框 */
+.slot-empty {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2rpx dashed #4a3068;
+  border-radius: 10rpx;
+  box-sizing: border-box;
+}
+
+.slot-num {
+  font-size: 40rpx;
+  color: #4a3068;
+  font-weight: bold;
+}
+
+/* 位置名称标签：绝对定位在卡片正下方 */
+.pos-label {
+  position: absolute;
+  top: 190rpx;   /* card高180 + 10间距 */
+  left: 50%;
+  transform: translateX(-50%);
+  width: 160rpx;
+  font-size: 20rpx;
+  color: #aaa;
+  text-align: center;
+  line-height: 1.4;
+  white-space: nowrap;
+}
+
+/* 翻牌后牌名标签：绝对定位在位置名下方 */
+.card-name-label {
+  position: absolute;
+  top: 218rpx;   /* 190 + 28 */
+  left: 50%;
+  transform: translateX(-50%);
+  width: 160rpx;
+  font-size: 18rpx;
+  color: #e94560;
+  text-align: center;
+  line-height: 1.4;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ══════════════════════════════════════════════════════
+   6. 牌池
+   关键：pool-card 都用固定宽高，通过 margin 制造重叠感
+   每张都可点击，z-index 递增确保后面的牌在上层可点
+══════════════════════════════════════════════════════ */
+
+.pool-section {
+  margin-top: 30rpx;
+  padding: 0 16rpx;
+}
+
+.pool-title {
+  font-size: 26rpx;
+  color: #c9a0dc;
+  text-align: center;
+  margin-bottom: 8rpx;
+}
+
+.pool-need {
+  color: #e94560;
+  font-weight: bold;
+}
+
+.pool-tip {
+  font-size: 22rpx;
+  color: #555;
+  text-align: center;
+  margin-bottom: 16rpx;
+}
+
+.pool-scroll {
+  width: 100%;
+  height: 200rpx;
+  white-space: nowrap;
+}
+
+.pool-flex {
+  display: flex;
+  padding: 20rpx 10rpx 10rpx;
+  /* 牌与牌之间用负margin制造重叠感，但每张都单独在外层view上注册tap */
+}
+
+/* 每个外层容器独立接收点击 */
+.pool-card-outer {
+  flex-shrink: 0;
+  margin-right: -20rpx; /* 制造重叠 */
+  position: relative;
+  z-index: 1;
+}
+
+/* 让后面的牌z-index更高，覆盖前面，更容易点到 */
+.pool-card-outer:last-child {
+  margin-right: 0;
+}
+
+.pool-card {
+  width: 88rpx;
+  height: 148rpx;
+  border-radius: 8rpx;
+  background: #120e2a;
+  border: 1rpx solid #3a2560;
+  overflow: hidden;
+  position: relative;
+  transition: transform .2s;
+}
+
+.pool-card-gone {
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* 冒头选中：向上偏移 */
+.pool-card-peek {
+  transform: translateY(-24rpx);
+  border: 2rpx solid #e94560;
+  box-shadow: 0 0 16rpx rgba(233, 69, 96, 0.5);
+}
+
+.peek-label {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: rgba(233, 69, 96, 0.85);
+  font-size: 18rpx;
+  text-align: center;
+  color: #fff;
+  padding: 4rpx 0;
+}
+
+.pool-img {
+  width: 100%;
+  height: 100%;
+}
+
+.pool-card-press {
+  opacity: 0.7;
+}
+
+/* ══════════════════════════════════════════════════════
+   7. 操作按钮
+══════════════════════════════════════════════════════ */
+
+.btn-row {
+  display: flex;
+  justify-content: center;
+  margin-top: 36rpx;
+}
+
+.action-btn {
+  padding: 22rpx 72rpx;
+  border-radius: 50rpx;
+  font-size: 30rpx;
+  font-weight: bold;
+  text-align: center;
+  transition: all .2s;
+}
+
+.btn-ready {
+  background: #e94560;
+  color: #fff;
+  box-shadow: 0 4rpx 20rpx rgba(233, 69, 96, 0.4);
+}
+
+.btn-dim {
+  background: #2a1e3a;
+  color: #555;
+}
+
+/* ══════════════════════════════════════════════════════
+   8. 再次占卜入口
+══════════════════════════════════════════════════════ */
+
+.re-reading-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12rpx;
+  margin: 10rpx 0 20rpx;
+  flex-wrap: wrap;
+}
+
+.re-hint {
+  font-size: 26rpx;
+  color: #888;
+}
+
+.re-btn {
+  font-size: 26rpx;
+  color: #e94560;
+  border: 1.5rpx solid #e94560;
+  border-radius: 30rpx;
+  padding: 8rpx 28rpx;
+}
+
+/* ══════════════════════════════════════════════════════
+   9. 固定底部输入栏
+   position:fixed + bottom:safe-area，绝不跟随页面滚动
+══════════════════════════════════════════════════════ */
+
+.bottom-bar {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: #0f0d20;
+  border-top: 1rpx solid #1e1a35;
+  padding: 16rpx 24rpx;
+  padding-bottom: calc(env(safe-area-inset-bottom) + 16rpx);
+  z-index: 999;
+  box-sizing: border-box;
+}
+
+.input-row {
+  display: flex;
+  align-items: center;
+  background: #1a1630;
+  border-radius: 50rpx;
+  padding: 6rpx 8rpx 6rpx 28rpx;
+  border: 1rpx solid #2e2050;
+}
+
+.bar-input {
+  flex: 1;
+  height: 76rpx;
+  font-size: 28rpx;
+  color: #e8e8f0;
+  background: transparent;
+}
+
+.send-btn {
+  background: #e94560;
+  color: #fff;
+  font-size: 28rpx;
+  font-weight: bold;
+  padding: 16rpx 36rpx;
+  border-radius: 40rpx;
+  flex-shrink: 0;
+}
+
+/* ══════════════════════════════════════════════════════
+   10. Loading & 动画
+══════════════════════════════════════════════════════ */
+
+.thinking {
+  display: flex;
+  gap: 12rpx;
+  align-items: center;
+  padding: 4rpx 0;
+}
+
+.dot {
+  width: 14rpx;
+  height: 14rpx;
+  background: #e94560;
+  border-radius: 50%;
+  animation: blink 1.2s infinite;
+}
+
+@keyframes blink {
+  0%, 100% { opacity: 0.2; }
+  50%       { opacity: 1;   }
+}
+
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(12rpx); }
+  to   { opacity: 1; transform: translateY(0);     }
+}
+
+/* rich-text气泡（AI解读，含HTML） */
+.bubble-rich {
+  display: block;
+  background: #1e1a3a;
+  border-radius: 16rpx 16rpx 16rpx 4rpx;
+  padding: 20rpx 24rpx;
+  font-size: 26rpx;
+  color: #e0d8f0;
+  line-height: 1.7;
+  max-width: 560rpx;
+  word-break: break-all;
+}
+
+/* 牌阵快照（进入reading阶段后固定在chatList里） */
+.spread-snapshot-wrap {
+  margin: 20rpx 0;
+  background: rgba(255,255,255,0.04);
+  border-radius: 20rpx;
+  padding: 20rpx 0 20rpx;
+  overflow: hidden;
+}

@@ -1,0 +1,206 @@
+<!-- index.wxml -->
+<view class="page-wrap">
+
+  <!-- ══════════ 主滚动区 ══════════ -->
+  <scroll-view
+    class="chat-scroll"
+    scroll-y
+    scroll-into-view="{{lastId}}"
+    scroll-with-animation
+    enhanced
+    bounces="{{false}}"
+  >
+
+    <!-- 对话气泡 -->
+    <block wx:for="{{chatList}}" wx:key="id">
+      <!-- 牌阵快照：点开始解读后固定在这个位置 -->
+      <view wx:if="{{item.type === 'spread'}}" id="{{item.id}}" class="spread-snapshot-wrap">
+        <view class="spread-title">{{item.spread.name}}</view>
+        <view class="slots-container" style="height:{{item.spread.containerH}}rpx;">
+          <block wx:for="{{item.spread.layout}}" wx:for-item="pos" wx:for-index="si" wx:key="si">
+            <view class="slot-item" style="left:{{pos.l}}%; top:{{pos.t}}rpx;">
+              <view class="card-wrap">
+                <view class="card-face card-front-face {{item.drawnCards[si].reverse ? 'is-reverse' : ''}}">
+                  <image src="{{item.drawnCards[si].imgPath}}" mode="aspectFill" class="card-img"></image>
+                </view>
+              </view>
+              <text class="pos-label">{{item.spread.pos[si]}}</text>
+              <text class="card-name-label">{{item.drawnCards[si].name}} {{item.drawnCards[si].reverse ? '逆位' : '正位'}}</text>
+            </view>
+          </block>
+        </view>
+      </view>
+      <!-- 普通气泡 -->
+      <view wx:if="{{item.type !== 'spread'}}" id="{{item.id}}" class="msg msg-{{item.role}}">
+        <view class="avatar">{{item.role === 'ai' ? '🔮' : '👤'}}</view>
+        <view wx:if="{{item.isHtml}}" class="bubble bubble-rich">
+          <rich-text nodes="{{item.content}}"></rich-text>
+        </view>
+        <view wx:if="{{!item.isHtml}}" class="bubble">{{item.content}}</view>
+      </view>
+    </block>
+
+    <!-- 选牌阵 -->
+    <view class="spread-picker-wrap" wx:if="{{step === 'select_spread'}}">
+      <view class="spread-picker">
+        <view
+          wx:for="{{spreadOptions}}"
+          wx:for-item="sp"
+          wx:key="name"
+          class="picker-item"
+          bindtap="confirmSpread"
+          data-spread="{{sp}}"
+          hover-class="picker-item-hover"
+        >
+          <view class="p-name">{{sp.name}}</view>
+          <view class="p-tag">{{sp.tag}}</view>
+          <view class="p-desc">{{sp.desc}}</view>
+        </view>
+      </view>
+    </view>
+
+    <!-- 牌阵互动区（draw / reveal / reading 三阶段都显示，reading只读） -->
+    <view
+      class="interact-wrap"
+      wx:if="{{currentSpread && (step === 'draw' || step === 'reveal')}}"
+    >
+      <view class="spread-title">{{currentSpread.name}}</view>
+
+      <!-- 抽牌进度（draw阶段） -->
+      <view class="draw-counter" wx:if="{{step === 'draw'}}">
+        已选 {{drawnCount}} / {{currentSpread.count}} 张
+      </view>
+
+      <!-- 牌阵槽位 -->
+      <view class="slots-container" style="height:{{currentSpread.containerH}}rpx;">
+        <block wx:for="{{currentSpread.layout}}" wx:for-item="pos" wx:key="index">
+          <view
+            class="slot-item"
+            style="left:{{pos.l}}%; top:{{pos.t}}rpx;"
+            bindtap="onSlotTap"
+            data-slotidx="{{index}}"
+          >
+            <!-- 卡片：翻牌前显示背面，翻牌后显示正面（用wx:if彻底切换，不依赖CSS层叠） -->
+            <view class="card-wrap">
+              <!-- 未翻：背面 -->
+              <view wx:if="{{!drawnCards[index] || !drawnCards[index].flipped}}" class="card-face card-back-face">
+                <image
+                  wx:if="{{drawnCards[index]}}"
+                  src="{{cardBackUrl}}"
+                  mode="aspectFill"
+                  class="card-img"
+                ></image>
+                <view wx:else class="slot-empty">
+                  <text class="slot-num">{{index + 1}}</text>
+                </view>
+              </view>
+              <!-- 已翻：正面 -->
+              <view
+                wx:else
+                class="card-face card-front-face {{drawnCards[index].reverse ? 'is-reverse' : ''}}"
+              >
+                <image
+                  src="{{drawnCards[index].imgPath}}"
+                  mode="aspectFill"
+                  class="card-img"
+                ></image>
+              </view>
+            </view>
+            <!-- 位置名 -->
+            <text class="pos-label">{{currentSpread.pos[index]}}</text>
+            <!-- 翻牌后：牌名+正逆位 -->
+            <text
+              class="card-name-label"
+              wx:if="{{drawnCards[index] && drawnCards[index].flipped}}"
+            >{{drawnCards[index].name}} {{drawnCards[index].reverse ? '逆位' : '正位'}}</text>
+          </view>
+        </block>
+      </view>
+
+      <!-- 牌池（draw阶段） -->
+      <view class="pool-section" wx:if="{{step === 'draw'}}">
+        <view class="pool-title">
+          🌙 请感应并选择 <text class="pool-need">{{drawnRemain}}</text> 张牌
+        </view>
+        <view class="pool-tip">单击冒头 · 再击入位 · 点槽退回</view>
+        <scroll-view scroll-x class="pool-scroll">
+          <view class="pool-flex">
+            <view
+              wx:for="{{deck}}"
+              wx:for-item="pc"
+              wx:key="deckId"
+              class="pool-card-outer"
+              bindtap="onPoolCardTap"
+              data-idx="{{index}}"
+            >
+              <!-- 已用：占位 -->
+              <view wx:if="{{pc.gone}}" class="pool-card pool-card-gone"></view>
+              <!-- 冒头选中 -->
+              <view wx:elif="{{selectedPoolIdx === index}}" class="pool-card pool-card-peek">
+                <image src="{{cardBackUrl}}" mode="aspectFill" class="pool-img"></image>
+                <view class="peek-label">再点入位</view>
+              </view>
+              <!-- 普通 -->
+              <view wx:else class="pool-card">
+                <image src="{{cardBackUrl}}" mode="aspectFill" class="pool-img"></image>
+              </view>
+            </view>
+          </view>
+        </scroll-view>
+      </view>
+
+      <!-- 操作按钮 -->
+      <view class="btn-row">
+        <view
+          wx:if="{{step === 'draw'}}"
+          class="action-btn {{drawnFull ? 'btn-ready' : 'btn-dim'}}"
+          bindtap="revealCards"
+        >翻开牌面</view>
+
+        <view
+          wx:if="{{step === 'reveal' && isRevealed}}"
+          class="action-btn btn-ready"
+          bindtap="startAnalyze"
+        >开始解读</view>
+      </view>
+    </view>
+
+    <!-- reading阶段：再次占卜入口 -->
+    <view class="re-reading-row" wx:if="{{step === 'reading' && !loading}}">
+      <text class="re-hint">您可以继续追问，或</text>
+      <view class="re-btn" bindtap="startNewReading">再次占卜</view>
+    </view>
+
+    <!-- AI思考动画 -->
+    <view class="msg msg-ai" wx:if="{{loading}}">
+      <view class="avatar">🔮</view>
+      <view class="bubble">
+        <view class="thinking">
+          <view class="dot" style="animation-delay:0s"></view>
+          <view class="dot" style="animation-delay:0.2s"></view>
+          <view class="dot" style="animation-delay:0.4s"></view>
+        </view>
+      </view>
+    </view>
+
+    <view style="height:160rpx;"></view>
+  </scroll-view>
+
+  <!-- ══════════ 固定底部输入栏（fixed到屏幕） ══════════ -->
+  <view class="bottom-bar">
+    <view class="input-row">
+      <input
+        class="bar-input"
+        value="{{userInput}}"
+        bindinput="onInputChange"
+        placeholder="向塔罗师倾诉..."
+        placeholder-style="color:#555"
+        confirm-type="send"
+        bindconfirm="sendMessage"
+        adjust-position="{{false}}"
+      />
+      <view class="send-btn" bindtap="sendMessage">发送</view>
+    </view>
+  </view>
+
+</view>
